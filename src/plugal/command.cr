@@ -68,7 +68,7 @@ module Plugal
       end
 
       {% for key, value in args %}
-        private def _arg_{{key.id}} 
+        private def _arg_{{key.id}}_{{value[:type].resolve.name.downcase.id}} 
         end
       {% end %}
 

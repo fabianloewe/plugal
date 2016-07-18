@@ -62,13 +62,7 @@ module Plugal
                   result = {{method.name}}(
                     {% if !method.args.empty? %}
                       {% for arg in method.args %}
-                        {% if arg.default_value %}
-                          {{arg.name}}: command["{{arg.name}}"].raw.as?(typeof({{arg.default_value}}))
-                        {% elsif arg.restriction %}
-                          {{arg.name}}: command["{{arg.name}}"].raw.as?({{arg.restriction}})                          
-                        {% else %}
-                          {{arg.name}}: command["{{arg.name}}"]
-                        {% end %}
+                        {{arg.name}}: command["{{arg.name}}"].raw.as({{Plugal::Command.subclasses.find { |s| s.name == method.name.split('_')[1].capitalize + "Command" }.methods.find {|i| i.name.starts_with?("_arg_#{arg.name}")}.name.split('_').last.capitalize.tr("32", "64").id}})
 
                         {% if arg != method.args.last %}
                           ,
@@ -90,7 +84,7 @@ module Plugal
         {% if subclass.name == name.capitalize.id + "Command" %}
           private def provide_{{name.id}}(
             # Selects all methods containin "_arg_" -> Splits these at '_' -> Joins the results with ", "
-            {{subclass.methods.select { |m| m.name =~ /_arg_/}.map(&.name.split('_').last.id).join(", ").id}}
+            {{subclass.methods.select { |m| m.name =~ /_arg_/}.map(&.name.split('_')[2].id).join(", ").id}}
             )
 
             {{yield subclass.methods.select { |m| m.name =~ /_arg_/}.map(&.name.split('_').last.id).join(", ").id}}

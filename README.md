@@ -3,7 +3,7 @@
 A plugin system relying on Redis in Crystal
 
 Beside that you can also use it to simply communicate with other processes or applications
-over commands in a type-safe way.
+over commands in a type-safer way.
 
 ## Installation
 
