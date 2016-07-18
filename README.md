@@ -1,10 +1,13 @@
-# plugal
+# Plugal
 
-TODO: Write a description here
+A plugin system relying on Redis in Crystal
+
+Beside that you can also use it to simply communicate with other process or applications
+over commands in type-safe way.
 
 ## Installation
 
-Install Redis. For information on how to do that have a look at https://redis.io.
+Install Redis. For information on how to do that have a look at http://redis.io.
 
 Then add this to your application's `shard.yml`:
 
