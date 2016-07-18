@@ -1,6 +1,11 @@
 require "json"
 
 module Plugal
+  # Returns all defined commands in this application as an `Array(String)`
+  def commands
+    {{Plugal::Commands.subclasses.map &.name.stringify}}
+  end
+
   # Wrappes the result data and includes error information.
   #
   class Result(T)
@@ -67,10 +72,10 @@ module Plugal
         end
       {% end %}
 
-      def initialize(*args)
+      def initialize(**args)
         i = 0
         {% for key, value in args %}
-          @{{key.id}} = args[i]
+          @{{key.id}} = args[{{key.id}}]
           i += 1
         {% end %}    
       end
@@ -89,6 +94,9 @@ module Plugal
     ::Plugal.command({{name}}, {{args}}, {{result}})
   end
 
+  # An abstract struct to bring the commands together
+  #
+  # Its only purpose is to make the macro magic work by bringing all commands under one roof.
   abstract struct Command
   end
 end

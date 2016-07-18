@@ -2,8 +2,8 @@
 
 A plugin system relying on Redis in Crystal
 
-Beside that you can also use it to simply communicate with other process or applications
-over commands in type-safe way.
+Beside that you can also use it to simply communicate with other processes or applications
+over commands in a type-safe way.
 
 ## Installation
 
@@ -53,7 +53,7 @@ prov.run
 ```
 
 
-To receive the data provided by the first class you need a receiver. Quelle surprise! :D
+To receive the data provided by the first class you need a receiver. Quelle surprise!
 Include `Plugal::Receiver` and use the `Plugal::Receiver#receive` macro to get your result.
 ```crystal
 class MyReceiver
@@ -67,7 +67,7 @@ class MyReceiver
 There are some things to notice. You don't directly get your resulting data but a wrapper containing it.
 The `Plugal::Result` class can also signal you failure so you can handle errors. For more information check the docs.
 
-Again an instance must be created and run.
+Again an instance must be created and run. This application will receive data from all providers connected to it.
 ```crystal
 recv = MyReceiver.new
 recv.run

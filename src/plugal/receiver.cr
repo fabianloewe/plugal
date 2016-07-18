@@ -2,58 +2,6 @@ require "redis"
 require "json"
 
 module Plugal
-  def commands
-    {{Plugal::Commands.subclasses.map &.name.stringify}}
-  end
-
-  class ReceiverOld(T, R)
-    getter channel : String
-
-    def initialize(@channel, @commands : Array(CommandDef(T, R)))
-      @redis = Redis.new
-      @results = [] of Result
-    end
-
-    def add(name, params = nil, providers = nil)
-      cmd = Command.new
-      cmd.name = name 
-      cmd.params = params if !params.nil?
-      cmd.providers = providers if !providers.nil?
-
-      @commands << cmd
-    end
-
-    def add(name, params = nil, providers = nil, &block)
-      add name, params, providers
-
-      on_result name, &block
-    end
-
-    def remove(name)
-      if @commands.reject! { |cmd| cmd.name == name }
-        @redis.unscubscibe name
-      end
-    end
-
-    def send(name, params : Hash(String, _) = nil)
-      if cmd = @commands.bsearch { |cmd| cmd.name == name }
-        @redis.publish(@channel, Command.new(name, params).to_json)
-      end
-    end
-
-    def on_result(name, &block : Result ->)
-      cmd = @commands.bsearch { |cmd| cmd.name == name}
-
-      @redis.subscribe(name) do |on|
-        on.message do |channel, result|
-          result = Result.from_json result
-          @results << result
-          block.call result
-        end
-      end
-    end
-  end
-
   module Receiver
     macro included
       @@name = {{@type.name.id.stringify}}
@@ -87,6 +35,7 @@ module Plugal
       generate_send
     end
 
+    # :nodoc
     macro generate_send
       case name.to_s.capitalize + "Command" 
       {% for subclass in Plugal::Command.subclasses %}
@@ -101,6 +50,7 @@ module Plugal
       generate_run
     end
 
+    # :nodoc:
     macro generate_run
       commands = Tuple.new(
       {% for method in @type.methods %}
