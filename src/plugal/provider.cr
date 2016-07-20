@@ -52,17 +52,20 @@ module Plugal
 
     macro setup
       @@redis.subscribe(@@receiver) do |on|
-        on.message do |channel, command|
-          command = JSON.parse command
+        on.message do |channel, command_str|
+          command = JSON.parse command_str
           case command["name"]
             {% for method in @type.methods %}
               {% if method.name =~ /provide_/ %}
                 when {{method.name.split('_')[1]}}
+                  {% cmd_class = Plugal::Command.subclasses.find { |s| s.name == method.name.split('_')[1].capitalize + "Command" } %}
+                  command = {{cmd_class.id}}.from_json command_str
+
                   # Creates the method call
                   result = {{method.name}}(
                     {% if !method.args.empty? %}
                       {% for arg in method.args %}
-                        {{arg.name}}: command["{{arg.name}}"].raw.as({{Plugal::Command.subclasses.find { |s| s.name == method.name.split('_')[1].capitalize + "Command" }.methods.find {|i| i.name.starts_with?("_arg_#{arg.name}")}.name.split('_').last.capitalize.tr("32", "64").id}})
+                        {{arg.name}}: command.{{arg.name}} 
 
                         {% if arg != method.args.last %}
                           ,
@@ -71,13 +74,31 @@ module Plugal
                     {% end %}
                     )
 
-                    @@redis.publish @@receiver.not_nil! + ".{{method.name.split('_')[1].id}}", result
+                    {% result_type = cmd_class.methods.find { |i| i.name.starts_with?("_result_") }.name.split('_').last.capitalize.id %}
+                    result = if result.is_a?({{result_type.id}})
+                               Plugal::Result({{result_type.id}}).new result
+                             else
+                               result
+                             end                            
+                    puts "Result: #{result.to_json}"
+
+                    command = {{cmd_class}}.new(
+                      {% if !method.args.empty? %}
+                        {% for arg in method.args %}
+                          {{arg.name}}: command.{{arg.name}},
+                        {% end %} 
+                      {% end %}
+                      result: result
+                    ).to_json
+                    puts "Command: #{command}"
+
+                    @@redis.publish @@receiver.not_nil! + ".{{method.name.split('_')[1].id}}",command
               {% end %} 
-            {% end %}                         
+            {% end %}                       
           end
         end
       end
-    end
+    end 
 
     macro provide(name)
       {% for subclass in Plugal::Command.subclasses %}
@@ -93,4 +114,8 @@ module Plugal
       {% end %}
     end
   end
+end
+
+private macro create_cmdline
+
 end

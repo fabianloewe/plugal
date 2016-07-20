@@ -17,7 +17,7 @@ module Plugal
     # :nodoc:
     JSON.mapping(
         result: Value,
-        message: String,
+        message: String?,
         data: T
     )
 
@@ -63,21 +63,36 @@ module Plugal
         {% args[key] = {type: value} unless value.is_a?(HashLiteral) || value.is_a?(NamedTupleLiteral) %}
       {% end %}
 
-      {% args[:result] = {type: result} %}
+      {% args[:result] = {type: "Plugal::Result(#{result})".id, nilable: true} %}
       private def _result_{{result}}
       end
 
       {% for key, value in args %}
-        private def _arg_{{key.id}}_{{value[:type].resolve.name.downcase.id}} 
-        end
+        {% unless key.id == "result" %}
+          private def _arg_{{key.id}}_{{value[:type].resolve.name.downcase.id}} 
+          end
+        {% end %}
       {% end %}
+
+      {% args[:name] = {type: String} %}
 
       def initialize(**args)
         i = 0
+        
         {% for key, value in args %}
-          @{{key.id}} = args[{{key.id}}]
-          i += 1
-        {% end %}    
+          {% if key.id == "name" %}
+            @name = {{name.id.stringify}}
+          {% elsif key.id == "result" %}
+            @result = if result = args[:result]?
+                        result
+                      else
+                        nil
+                      end 
+          {% else %}
+            @{{key.id}} = args[:{{key.id}}]            
+            i += 1
+          {% end %}
+        {% end %}            
       end
 
       JSON.mapping({{args}})

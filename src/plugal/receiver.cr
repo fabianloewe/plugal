@@ -4,7 +4,7 @@ require "json"
 module Plugal
   module Receiver
     macro included
-      @@name = {{@type.name.id.stringify}}
+      @@name = {{@type.name.stringify}}
       @@redis = Redis.new
       @@commands = [] of String
     end 
@@ -31,18 +31,22 @@ module Plugal
       @@commands ||= {{Plugal::Command.subclasses.map &.name.stringify}}
     end    
 
-    def send(name, *args)
+    def send(name, **args)
       generate_send
     end
 
     # :nodoc
-    macro generate_send
+    macro generate_send      
       case name.to_s.capitalize + "Command" 
       {% for subclass in Plugal::Command.subclasses %}
-        when {{subclass.name.id}}
-          %cmd = {{subclass.name.id}}.new *args
-          @@redis.publish @@name, %cmd.to_json
+        when "{{subclass.name.id}}"          
+          cmd = {{subclass.name.id}}.new **args
+          puts "Sending to #{@@name}: #{cmd}"
+          result = @@redis.publish @@name, cmd.to_json          
+          puts "Clients received message: #{result}"
       {% end %}
+      else
+        puts "Command #{name.to_s.capitalize}Command not found!"
       end
     end
 
