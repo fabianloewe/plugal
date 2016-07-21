@@ -5,8 +5,11 @@ module Plugal
   module Receiver
     macro included
       @@name = {{@type.name.stringify}}
-      @@redis = Redis.new
+      @@redis_commander = Redis.new
+      @@redis_receiver = Redis.new
       @@commands = [] of String
+
+      generate_send
     end 
 
     macro receive(name)
@@ -31,26 +34,25 @@ module Plugal
       @@commands ||= {{Plugal::Command.subclasses.map &.name.stringify}}
     end    
 
-    def send(name, **args)
-      generate_send
-    end
-
     # :nodoc
-    macro generate_send      
+    macro generate_send  
+      def send(name, **args)    
       case name.to_s.capitalize + "Command" 
       {% for subclass in Plugal::Command.subclasses %}
         when "{{subclass.name.id}}"          
           cmd = {{subclass.name.id}}.new **args
           puts "Sending to #{@@name}: #{cmd}"
-          result = @@redis.publish @@name, cmd.to_json          
+          result = @@redis_commander.publish @@name, cmd.to_json          
           puts "Clients received message: #{result}"
       {% end %}
       else
         puts "Command #{name.to_s.capitalize}Command not found!"
       end
+      end
     end
 
-    def run
+    def run(&block)
+      proc = block
       generate_run
     end
 
@@ -59,7 +61,7 @@ module Plugal
       commands = Tuple.new(
       {% for method in @type.methods %}
         {% if method.name =~ /receive_/ %}
-          (@@name + ".{{method.name.split('_')[1].id}}")
+          @@name + ".{{method.name.split('_')[1].id}}"
           {% if method != @type.methods.last %}
             ,
           {% end %}
@@ -67,7 +69,7 @@ module Plugal
       {% end %}
       )
 
-      @@redis.subscribe(*commands) do |on|
+      @@redis_receiver.subscribe(*commands) do |on|
         on.message do |channel, result|
           case channel
           {% for method in @type.methods %}
@@ -77,8 +79,12 @@ module Plugal
                 {{method.name.id}} result
             {% end %}
           {% end %} 
-          end
-        end
+          end          
+        end 
+
+        on.subscribe do |channel, subscriptions|
+          proc.call
+        end  
       end
     end
   end

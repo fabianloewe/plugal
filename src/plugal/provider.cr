@@ -1,43 +1,13 @@
 require "redis"
 require "json"
+require "colorize"
 
 module Plugal
-  class ProviderOld(T, R)
-    property commands : Array(CommandDef(T, R))
-
-    def initialize(@name : String, @commands : Array(CommandDef(T, R)))
-      @redis = Redis.new      
-    end
-
-    def channels
-      channels = [] of String
-      @commands.each { |cmd| channels << cmd.receiver + '.' + cmd.name }
-    end    
-
-    macro def_on_command
-      def on_command(name, &block : Hash(String, 
-        {{@type.type_vars.first.id}})-> _)
-        if cmd_def = @commands.bsearch { |cmd| cmd.name == name }
-          receiver = cmd_def.receiver
-          @redis.subscribe(receiver) do |on|
-            on.message do |channel, command|
-              command = JSON.parse(command).as(Command)
-              result = block.call command.params
-  
-              @redis.publish receiver + '.' + name, result
-            end
-          end
-        end
-      end
-    end
-
-    def_on_command
-  end
-
   module Provider
     macro included
       @@name = "{{@type.name.id}}"
-      @@redis = Redis.new
+      @@redis_executor = Redis.new
+      @@redis_responder = Redis.new
       @@commands = [] of String
     end
 
@@ -51,13 +21,14 @@ module Plugal
     end
 
     macro setup
-      @@redis.subscribe(@@receiver) do |on|
+      @@redis_executor.subscribe(@@receiver) do |on|
         on.message do |channel, command_str|
-          command = JSON.parse command_str
-          case command["name"]
+          command_name = JSON.parse command_str
+          case command_name["name"]
             {% for method in @type.methods %}
               {% if method.name =~ /provide_/ %}
                 when {{method.name.split('_')[1]}}
+                begin
                   {% cmd_class = Plugal::Command.subclasses.find { |s| s.name == method.name.split('_')[1].capitalize + "Command" } %}
                   command = {{cmd_class.id}}.from_json command_str
 
@@ -79,8 +50,7 @@ module Plugal
                                Plugal::Result({{result_type.id}}).new result
                              else
                                result
-                             end                            
-                    puts "Result: #{result.to_json}"
+                             end                      
 
                     command = {{cmd_class}}.new(
                       {% if !method.args.empty? %}
@@ -91,8 +61,13 @@ module Plugal
                       result: result
                     ).to_json
                     puts "Command: #{command}"
+                    puts "Target: #{@@receiver.not_nil! + ".{{method.name.split('_')[1].id}}"}"
 
-                    @@redis.publish @@receiver.not_nil! + ".{{method.name.split('_')[1].id}}",command
+                    result = @@redis_responder.publish @@receiver.not_nil! + ".{{method.name.split('_')[1].id}}", command
+                    puts "Publish result: #{result}"
+                  rescue e
+                    puts "ERROR: ".colorize(:red), e
+                  end
               {% end %} 
             {% end %}                       
           end

@@ -18,11 +18,11 @@ module Plugal
     JSON.mapping(
         result: Value,
         message: String?,
-        data: T
+        data: String
     )
 
-    def initialize(@data, @result : Value = Value::Success, @message : String = "")
-      #@data = data.to_json
+    def initialize(data : T, @result : Value = Value::Success, @message : String = "")
+      @data = data.to_json
     end
 
     def success(&block : T -> _)
