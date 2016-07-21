@@ -60,7 +60,7 @@ class MyReceiver
   include Plugal::Receiver
 
   receive :love do |result|
-    puts result.data  # => e.g. "Victor+Chantel=LoVe!"
+    puts result.data  # => e.g. "Victor+Victoria=LoVe!"
   end
 ```
 
@@ -68,9 +68,12 @@ There are some things to notice. You don't directly get your resulting data but 
 The `Plugal::Result` class can also signal you failure so you can handle errors. For more information check the docs.
 
 Again an instance must be created and run. This application will receive data from all providers connected to it.
+The block gets called after the Redis subscriptions are made and can be used to actually send commands.
 ```crystal
 recv = MyReceiver.new
-recv.run
+recv.run do
+  recv.send :love, me: "Victor", you: "Victoria"
+end
 ```
 
 ## Development
