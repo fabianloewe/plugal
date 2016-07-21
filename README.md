@@ -30,6 +30,8 @@ Define a command. It follows the style of `JSON#mapping`.
 Plugal.command :love, me: String, you: String
 ```
 
+### The Provider
+
 Create a provider which includes `Plugal::Provider`.
 ```crystal
 class MyProvider
@@ -52,6 +54,7 @@ prov = MyProvider.new
 prov.run
 ```
 
+### The Receiver
 
 To receive the data provided by the first class you need a receiver. Quelle surprise!
 Include `Plugal::Receiver` and use the `Plugal::Receiver#receive` macro to get your result.
