@@ -65,6 +65,7 @@ class MyReceiver
   receive :love do |result|
     puts result.data  # => e.g. "Victor+Victoria=LoVe!"
   end
+end
 ```
 
 There are some things to notice. You don't directly get your resulting data but a wrapper containing it.
