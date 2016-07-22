@@ -60,11 +60,8 @@ module Plugal
                       {% end %}
                       result: result
                     ).to_json
-                    puts "Command: #{command}"
-                    puts "Target: #{@@receiver.not_nil! + ".{{method.name.split('_')[1].id}}"}"
 
                     result = @@redis_responder.publish @@receiver.not_nil! + ".{{method.name.split('_')[1].id}}", command
-                    puts "Publish result: #{result}"
                   rescue e
                     puts "ERROR: ".colorize(:red), e
                   end

@@ -17,14 +17,11 @@ module Plugal
         {% if subclass.name == name.capitalize.id + "Command" %}
           private def receive_{{name.id}}(result : Plugal::Result(
             # Finds the method called "_result_*" -> Splits this at '_' -> Gets the right type
-            {{subclass.methods.find { |m| m.name =~ /_result_/}.name.split('_').last.capitalize.id}}
+            {% result_type = subclass.methods.find { |m| m.name =~ /_result_/}.name.split('_').last.capitalize.id %}
+            {{result_type}}
           ))
 
-            {{yield Plugal::Result.type_var.first = subclass.methods.find { |m| m.name =~ /_result_/}.name.split('_').last.capitalize.id}}
-          end
-
-          private def send_{{name.id}}(*args)
-            
+            {{yield Plugal::Result.type_var.first = result_type}}
           end
         {% end %}
       {% end %}
@@ -41,9 +38,7 @@ module Plugal
       {% for subclass in Plugal::Command.subclasses %}
         when "{{subclass.name.id}}"          
           cmd = {{subclass.name.id}}.new **args
-          puts "Sending to #{@@name}: #{cmd}"
-          result = @@redis_commander.publish @@name, cmd.to_json          
-          puts "Clients received message: #{result}"
+          result = @@redis_commander.publish @@name, cmd.to_json    
       {% end %}
       else
         puts "Command #{name.to_s.capitalize}Command not found!"
@@ -74,9 +69,9 @@ module Plugal
           case channel
           {% for method in @type.methods %}
             {% if method.name =~ /receive_/ %}
-              when {{method.name.split('_')[1]}}
-                result = {{method.args.first.restriction}}.from_json result
-                {{method.name.id}} result
+              when @@name + ".{{cmd_name = method.name.split('_')[1].id}}"
+                command = {{Plugal::Command.subclasses.find { |c| c.name == cmd_name.capitalize + "Command"}}}.from_json result
+                {{method.name.id}} command.result.not_nil!
             {% end %}
           {% end %} 
           end          
