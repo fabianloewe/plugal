@@ -80,6 +80,8 @@ recv.run do
 end
 ```
 
+To see this example at work have a look here: [plugal-test](https://github.com/hyronx/plugal-test).
+
 ## Development
 
 1. Do a lot more testing
