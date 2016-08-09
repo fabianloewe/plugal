@@ -1,4 +1,4 @@
-require "json"
+require "msgpack"
 
 module Plugal
   # Returns all defined commands in this application as an `Array(String)`
@@ -15,14 +15,14 @@ module Plugal
     end
 
     # :nodoc:
-    JSON.mapping(
+    MessagePack.mapping(
         result: Value,
         message: String?,
         data: String
     )
 
     def initialize(data : T, @result : Value = Value::Success, @message : String = "")
-      @data = data.to_json
+      @data = data.to_msgpack
     end
 
     def success(&block : T -> _)
@@ -95,7 +95,7 @@ module Plugal
         {% end %}            
       end
 
-      JSON.mapping({{args}})
+      MessagePack.mapping({{args}})
       
       {{yield}}
     end

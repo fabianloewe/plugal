@@ -1,5 +1,5 @@
 require "redis"
-require "json"
+require "msgpack"
 
 module Plugal
   module Receiver
@@ -38,7 +38,7 @@ module Plugal
       {% for subclass in Plugal::Command.subclasses %}
         when "{{subclass.name.id}}"          
           cmd = {{subclass.name.id}}.new **args
-          result = @@redis_commander.publish @@name, cmd.to_json    
+          result = @@redis_commander.publish @@name, cmd.to_msgpack    
       {% end %}
       else
         puts "Command #{name.to_s.capitalize}Command not found!"
@@ -70,7 +70,7 @@ module Plugal
           {% for method in @type.methods %}
             {% if method.name =~ /receive_/ %}
               when @@name + ".{{cmd_name = method.name.split('_')[1].id}}"
-                command = {{Plugal::Command.subclasses.find { |c| c.name == cmd_name.capitalize + "Command"}}}.from_json result
+                command = {{Plugal::Command.subclasses.find { |c| c.name == cmd_name.capitalize + "Command"}}}.from_msgpack result
                 {{method.name.id}} command.result.not_nil!
             {% end %}
           {% end %} 

@@ -1,5 +1,5 @@
 require "redis"
-require "json"
+require "msgpack"
 require "colorize"
 
 module Plugal
@@ -30,7 +30,7 @@ module Plugal
                 when {{method.name.split('_')[1]}}
                 begin
                   {% cmd_class = Plugal::Command.subclasses.find { |s| s.name == method.name.split('_')[1].capitalize + "Command" } %}
-                  command = {{cmd_class.id}}.from_json command_str
+                  command = {{cmd_class.id}}.from_msgpack command_str
 
                   # Creates the method call
                   result = {{method.name}}(
@@ -59,7 +59,7 @@ module Plugal
                         {% end %} 
                       {% end %}
                       result: result
-                    ).to_json
+                    ).to_msgpack
 
                     result = @@redis_responder.publish @@receiver.not_nil! + ".{{method.name.split('_')[1].id}}", command
                   rescue e
