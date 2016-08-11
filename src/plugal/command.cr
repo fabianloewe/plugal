@@ -15,11 +15,11 @@ module Plugal
     end
 
     # :nodoc:
-    MessagePack.mapping(
+    MessagePack.mapping({
         result: Value,
         message: String?,
         data: String
-    )
+    })
 
     def initialize(data : T, @result : Value = Value::Success, @message : String = "")
       @data = data.to_msgpack
