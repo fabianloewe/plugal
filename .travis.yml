@@ -2,3 +2,6 @@ language: crystal
 os:
  - linux
  - osx
+
+install:
+  - .travis/install.sh
