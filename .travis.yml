@@ -2,6 +2,7 @@ language: crystal
 os:
  - linux
  - osx
-
+ 
+sudo: required
 install:
-  - .travis/install.sh
+  - ./.travis/install.sh
